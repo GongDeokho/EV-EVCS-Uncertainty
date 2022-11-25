@@ -1,17 +1,17 @@
-def pipeline(ev_day,ev_num,evcs,evcs_plug,evcs_num,trigger,tou,day,time_slot):
+def pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,trigger,tou,day,time_slot,time):
     import pandas as pd
     import gurobipy as gp
+    import numpy as np
     from gurobipy import GRB
 
-    ## 데이터 전처리
-    SOC = 0
+    obj1 = 0
     # 충전기 개수만큼 ev 준비
-    if ev_num >= evcs_plug:
-        ev_day = ev_day[ev_day['ID'] <= evcs_plug]
+    if ev_num >= evcs_plug * evcs_num:
+        ev_day = ev_day[ev_day['ID'] <= evcs_plug * evcs_num]
     # time_slot 반영
     for i in range(len(ev_day)):
-        ev_day['in'][i] = ev_day['in'][i] - time_slot
-        ev_day['out'][i] = ev_day['out'][i] - time_slot
+        ev_day['in'][i] = ev_day['in'][i] - np.floor(time_slot/60)
+        ev_day['out'][i] = ev_day['out'][i] - np.floor(time_slot/60)
     # time slot 음수 --> 제거
         if ev_day['in'][i] <= 0:
             ev_day['in'][i] = 0
@@ -22,28 +22,25 @@ def pipeline(ev_day,ev_num,evcs,evcs_plug,evcs_num,trigger,tou,day,time_slot):
     Power_pos = [m.addVars(range(ev_day['dur'][vdx]), ub=evcs['Pmax'][vdx+(day*len(ev_day))], lb= 0, vtype = GRB.INTEGER) for vdx in range(len(ev_day))]
     Power_neg = [m.addVars(range(ev_day['dur'][vdx]), ub= 0, lb=evcs['Pmin'][vdx+(day*len(ev_day))], vtype = GRB.INTEGER) for vdx in range(len(ev_day))]
     
-    ## Constraint 1 : SoC boundary
     for idx in range(len(ev_day)):
         SOC = ev_day['init'][idx]
         for t in range(ev_day['dur'][idx]):
+            ## Constraint 1 : 충방전 동시에 되지 않게 하기
+            m.addConstr(Power_pos[idx][t] * Power_neg[idx][t] == 0)
+            
+            ## Constraint 2 : SoC boundary
             SOC += Power_pos[idx][t] * ev_day['chg_eff'][idx]/100 + Power_neg[idx][t] * ev_day['dchg_eff'][idx]/100
             m.addConstr(SOC >= ev_day['min'][idx])
             m.addConstr(SOC <= ev_day['max'][idx])
-        ## Cosntraint 2 : Target SoC
+            
+        ## Cosntraint 3 : Target SoC
         m.addConstr(SOC >= ev_day['target'][idx])
-        SOC = 0
         
-    ## Constraint 3 : 충방전 동시에 되지 않게 하기
-    for idx in range(len(ev_day)):
-        for t in range(ev_day['dur'][idx]):
-            m.addConstr(Power_pos[idx][t] * Power_neg[idx][t] == 0)
-            # m.addConstr(Power_pos[idx][t] * Power_neg[idx][t] >= 0)
-    
     ## 목적함수: 시간별 에너지 비용(전력량요금) (최소화)
     obj1 = gp.quicksum(Power_pos[idx][t] * tou['ToU'][t] + Power_neg[idx][t] * tou['ToU'][t] for idx in range(len(ev_day)) for t in range(ev_day['dur'][idx]))
-
-    m.setObjective(obj1 , GRB.MINIMIZE )
-
+    
+    
+    m.setObjective(obj1 , GRB.MINIMIZE)
     m.optimize()
     # 결과 정리
     # 결과 출력(csv or excel)
@@ -68,4 +65,4 @@ def pipeline(ev_day,ev_num,evcs,evcs_plug,evcs_num,trigger,tou,day,time_slot):
 
     # TEST.to_excel(excel_writer = 'TEST.xlsx')
     trigger = 1
-    return [Power,trigger]
+    return [Power,trigger,evcs_tot,ev_count]

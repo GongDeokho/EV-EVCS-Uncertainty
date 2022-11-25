@@ -1,4 +1,4 @@
-def pipeline(input_path,day,ev_num,trigger):
+def pipeline(input_path,day,ev_num,ev_count,trigger):
     import pandas as pd
     import numpy as np
     
@@ -21,11 +21,12 @@ def pipeline(input_path,day,ev_num,trigger):
             if ev['out'][vdx] > 47:
                 ev['out'][vdx] = 47
         ev['dur'] = ev['out'] - ev['in']
-        ev_day = ev[(ev['Day'] == day) & (ev['ID'] <= ev_num)]
+        ev_day = ev[(ev['Day'] == day) & (ev['ID'] <= ev_num-1)]
+        ev_count = ev_count + ev_num
         
         # Cost
         tou = pd.read_csv(input_path+"tou.csv")
     else:
         test = 1
     
-    return [ev,ev_day,tou,ev_num]
+    return [ev,ev_day,tou,ev_num,ev_count]
