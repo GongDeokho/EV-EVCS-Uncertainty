@@ -4,7 +4,6 @@ def pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,trigger,tou
     import numpy as np
     from gurobipy import GRB
 
-    obj1 = 0
     # 충전기 개수만큼 ev 준비
     if ev_num >= evcs_plug * evcs_num:
         ev_day = ev_day[ev_day['ID'] <= evcs_plug * evcs_num]
@@ -37,7 +36,7 @@ def pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,trigger,tou
         m.addConstr(SOC >= ev_day['target'][idx])
         
     ## 목적함수: 시간별 에너지 비용(전력량요금) (최소화)
-    obj1 = gp.quicksum(Power_pos[idx][t] * tou['ToU'][t] + Power_neg[idx][t] * tou['ToU'][t] for idx in range(len(ev_day)) for t in range(ev_day['dur'][idx]))
+    obj1 = gp.quicksum(Power_pos[idx][t] * tou['ToU'][ev_day['in'][idx]+t] + Power_neg[idx][t] * tou['ToU'][ev_day['in'][idx]+t] for idx in range(len(ev_day)) for t in range(ev_day['dur'][idx]))
     
     
     m.setObjective(obj1 , GRB.MINIMIZE)
