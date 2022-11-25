@@ -25,8 +25,8 @@ def pipeline(ev_day,ev_num,evcs,evcs_plug,evcs_num,trigger,tou,day,time_slot):
     ## Constraint 1 : SoC boundary
     for idx in range(len(ev_day)):
         SOC = ev_day['init'][idx]
-        for time in range(ev_day['dur'][idx]):
-            SOC += Power_pos[idx][time] * ev_day['chg_eff'][idx]/100 + Power_neg[idx][time] * ev_day['dchg_eff'][idx]/100
+        for t in range(ev_day['dur'][idx]):
+            SOC += Power_pos[idx][t] * ev_day['chg_eff'][idx]/100 + Power_neg[idx][t] * ev_day['dchg_eff'][idx]/100
             m.addConstr(SOC >= ev_day['min'][idx])
             m.addConstr(SOC <= ev_day['max'][idx])
         ## Cosntraint 2 : Target SoC
@@ -35,12 +35,12 @@ def pipeline(ev_day,ev_num,evcs,evcs_plug,evcs_num,trigger,tou,day,time_slot):
         
     ## Constraint 3 : 충방전 동시에 되지 않게 하기
     for idx in range(len(ev_day)):
-        for time in range(ev_day['dur'][idx]):
-            m.addConstr(Power_pos[idx][time] * Power_neg[idx][time] == 0)
-            # m.addConstr(Power_pos[idx][time] * Power_neg[idx][time] >= 0)
+        for t in range(ev_day['dur'][idx]):
+            m.addConstr(Power_pos[idx][t] * Power_neg[idx][t] == 0)
+            # m.addConstr(Power_pos[idx][t] * Power_neg[idx][t] >= 0)
     
     ## 목적함수: 시간별 에너지 비용(전력량요금) (최소화)
-    obj1 = gp.quicksum(Power_pos[idx][time] * tou['ToU'][time] + Power_neg[idx][time] * tou['ToU'][time] for idx in range(len(ev_day)) for time in range(ev_day['dur'][idx]))
+    obj1 = gp.quicksum(Power_pos[idx][t] * tou['ToU'][t] + Power_neg[idx][t] * tou['ToU'][t] for idx in range(len(ev_day)) for t in range(ev_day['dur'][idx]))
 
     m.setObjective(obj1 , GRB.MINIMIZE )
 
