@@ -43,7 +43,7 @@ def pipeline(input_path,err_rate,ev_day,evcs):
     ev_err = pd.DataFrame(np.zeros([n,3]),columns = ['in','out','init_soc'])
     for i in range(n):
         ev_err['in'][i] = ev_error[i,0]
-        everr['out'][i] = ev_error[i,1]
+        ev_err['out'][i] = ev_error[i,1]
         ev_err['init_soc'][i] = ev_error[i,2]
             
     # Binary error 발생 (poisson Distribution)
