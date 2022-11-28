@@ -24,12 +24,18 @@ time = 48 #스케줄링 시간
 day = 0
 
 while ev_count != 0:
-    trigger = 0
     ev_count = 0
-    [ev,ev_day,tou,ev_num,ev_count] = EV.pipeline(input_path,day,ev_num,ev_count,trigger) # EV data 받아오기
-    [evcs,evcs_num,evcs_tot] = EVCS.pipeline(input_path,ev_day,trigger,evcs_plug) # EVCS data
-    [Power,trigger,evcs_tot,ev_count] = Aggregator.pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,trigger,tou,day,time_slot,time) #Scheduling
-    [evcs_err,ev_err] = Uncertainty.pipeline(input_path,err_rate,ev_day,evcs)
+    #Scheduling
+    [ev,ev_day,tou,ev_num,ev_count] = EV.pipeline(input_path,day,ev_num,ev_count) # EV data 받아오기
+    [evcs,evcs_num,evcs_tot] = EVCS.pipeline(input_path,ev_day,evcs_plug) # EVCS data
+    [Power,evcs_tot,ev_count] = Aggregator.pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,tou,day,time_slot,time) #Scheduling
+    [evcs_err,ev_err] = Uncertainty.pipeline(err_rate,ev_day,ev_num,evcs,evcs_num,evcs_plug)
+    
+    #Uncertainty 적용
+    test = EVCS.evcs_after(evcs_tot,evcs_err,Power,evcs_num,evcs_plug,time_slot)
+    test = EV.ev_after()
+    
+    #time slot update
     time_slot = time_slot + 1
     if time_slot >= time*60-1:
         time_slot = 0

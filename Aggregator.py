@@ -1,4 +1,4 @@
-def pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,trigger,tou,day,time_slot,time):
+def pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,tou,day,time_slot,time):
     import pandas as pd
     import gurobipy as gp
     import numpy as np
@@ -64,5 +64,4 @@ def pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,trigger,tou
                 park_num = park_num - 1
 
     ev_count = sum(evcs_tot[evcs_tot==1].count())
-    trigger = 1
-    return [Power,trigger,evcs_tot,ev_count]
+    return [Power,evcs_tot,ev_count]
