@@ -19,16 +19,21 @@ evcs_plug = 5 # 충전소 1개 당 할당 EV 개수
 err_rate = 20 #error rate
 
 #time parameter
-time_slot = 0
-time = 48 #스케줄링 시간
+time_slot = 0 # 매 분마다 진행
+hour = 0 # counting
 day = 0
+time = 48 #스케줄링 시간
 
-while ev_count != 0:
+while True:
     ev_count = 0
     #Scheduling
     [ev,ev_day,tou,ev_num,ev_count] = EV.pipeline(input_path,day,ev_num,ev_count) # EV data 받아오기
     [evcs,evcs_num,evcs_tot] = EVCS.pipeline(input_path,ev_day,evcs_plug) # EVCS data
-    [Power,evcs_tot,ev_count] = Aggregator.pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,tou,day,time_slot,time) #Scheduling
+    
+    # 매 시간마다 스케줄링 진행
+    if time_slot % 60 == 0:
+        [Power,evcs_tot,ev_count] = Aggregator.pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,tou,day,time_slot,time) #Scheduling
+    
     [evcs_err,ev_err] = Uncertainty.pipeline(err_rate,ev_day,ev_num,evcs,evcs_num,evcs_plug)
     
     #Uncertainty 적용
@@ -37,8 +42,9 @@ while ev_count != 0:
     
     #time slot update
     time_slot = time_slot + 1
-    if time_slot >= time*60-1:
-        time_slot = 0
+    if time_slot%60 == 0:
+        hour = hour + 1
+    if hour == time:
         day = day + 1
 
 print(day,time_slot)

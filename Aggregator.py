@@ -49,7 +49,7 @@ def pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,tou,day,tim
     m.optimize()
     # 결과 정리
     Power = pd.DataFrame(np.zeros([len(ev_day),time]))
-    
+
     # 스케줄 저장하기
     for idx in range(len(ev_day)):
         for t in range(ev_day['dur'][idx]):
