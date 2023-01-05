@@ -1,0 +1,30 @@
+EV ---------
+day별 EV 데이터 가져옴, 매 시간마다 in,out,dur -1 해줌. (MPC)
+
+EV data -> out 시간이 day 넘어갈때 ( ex. plug-out = 36 ) --> 다음 day일 때도 계속 -1 진행해줌
+
+만약 out time이 0이 되면? --> 해당 데이터 삭제.
+
+EVCS -------
+11* 5 로 충전소 설정함.
+EVCS 플러그 총 개수보다 충전할 EV가 많으면 플러그 총개수까지만 받고 나머지 데이터 짜름
+
+uncertainty -----
+
+normal : EV 오류만 만듬 일단. 그리고 시뮬레이터 밖에서 결과로 적용할 예정 (Result Arrange.py 에 들어감)
+
+binormial : EVCS 오류만 만듬. 통신 오류만 적용하자. + recovery time
+
+==> 문제점 : EVCS after에서 불확실성 적용해서 recover time 카운팅해야하는데, 매 time_slot마다 발생시키는게 말이 안됨
+ : 이거 그냥 EV data 총 개수만큼 발생시켜서 적용 시켜버려도 되나?
+
+
+EVCS after ------
+오류 발생함 -> 같은 플러그 다른 충전소로 옮김 -> 만약에 다 꽉차면? --> 그냥 충전 끝. out-time 강제로 0 설정.
+
+
+EV after ----
+binormial 없어서 적용 안함.
+
+
+마지막으로 확인한거 : 아니 왜 day 1이 똑같이 ev_day에 두번 들어갔냐?

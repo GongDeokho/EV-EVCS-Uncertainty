@@ -49,17 +49,17 @@ def pipeline(err_rate,ev_day,ev_num,evcs,evcs_num,evcs_plug):
             ev_err['out'][i] = ev_error[i,1]
             ev_err['init'][i] = ev_error[i,2]
 
-        #recovery time & communication error : time slot ==> minute
+        #recovery time & communication delay : time slot ==> minute
         mu2 = 120 #error mean : time value(2 hour)
         sigma2 = x1/1.96
         loop = n
         time_error = np.round(mu2 + sigma2 * np.random.randn(loop,2))
         time_error2 = np.round(mu2 + sigma2 * np.random.randn(evcs_num,1))
-        time_err = pd.DataFrame(np.zeros([n,2]),columns = ['ev_recover_time','communication_err'])
+        time_err = pd.DataFrame(np.zeros([n,2]),columns = ['ev_recover_time','communication_delay'])
         time_err2 = pd.DataFrame(np.zeros([evcs_num,1]),columns = ['evcs_recover_time'])
         for i in range(n):
             time_err['ev_recover_time'][i] = time_error[i,0]
-            time_err['communication_err'][i] = time_error[i,1]
+            time_err['communication_delay'][i] = time_error[i,1]
         
         for i in range(evcs_num):
             time_err2['evcs_recover_time'][i] = time_error2[i,0]
@@ -97,20 +97,20 @@ def pipeline(err_rate,ev_day,ev_num,evcs,evcs_num,evcs_plug):
         ev_err = pd.concat([ev_err,time_err,eff_err,time_err],axis = 1)
         return(ev_err,time_err2)
     [ev_err,time_err2] = norm_dist(err_rate,ev_day,n,evcs_num,evcs_plug)
-    # Binary error 발생 (poisson Distribution)
+    # Binary error 발생 (binomial Distribution)
     def binom_dist(evcs_num,ev_num,ev_err,time_err2):
         evcs_err = pd.DataFrame(np.zeros([evcs_num,1]),columns = ['hardware_err'])
         batt_err = pd.DataFrame(np.zeros([n,1]),columns = ['battery_fault'])
-        # Hardware err : evcs
+        # communication err : evcs
         hard_err = np.random.binomial(1,0.03117,evcs_num) # 0.03117 = 282/(365*24)를 푸아송 분포로
         for i in range(evcs_num):
             evcs_err['hardware_err'][i] = hard_err[i]
         
-        # Battery Fault : ev
-        batt_error = np.random.binomial(1,0.0194,30) # 0.0194 = 4500 / 231,443
-        for i in range(n):
-            batt_err['battery_fault'][i] = batt_error[i]
-        ev_err = pd.concat([ev_err,batt_err],axis = 1)
+        # # Battery Fault : ev
+        # batt_error = np.random.binomial(1,0.0194,30) # 0.0194 = 4500 / 231,443
+        # for i in range(n):
+        #     batt_err['battery_fault'][i] = batt_error[i]
+        # ev_err = pd.concat([ev_err,batt_err],axis = 1)
         evcs_err = pd.concat([evcs_err,time_err2],axis = 1)
         return(evcs_err, ev_err)
     [evcs_err, ev_err] = binom_dist(evcs_num,ev_num,ev_err,time_err2)
