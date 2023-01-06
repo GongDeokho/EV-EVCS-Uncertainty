@@ -13,7 +13,7 @@ def pipeline(input_path,ev_day,evcs_plug,time_slot):
     #plug 개수랑 ev data랑 안맞으면 ev data 짤라야됨.
     if evcs_tot.size < len(ev_day):
         ev_day = ev_day.drop(range(evcs_tot.size,len(ev_day)))
-        ev_day = ev_day.reset_index()
+        ev_day = ev_day.reset_index(drop = True)
 
     return [evcs,evcs_num,evcs_tot]
 

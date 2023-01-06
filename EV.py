@@ -20,6 +20,7 @@ def pipeline(input_path,ev_num,ev_count,time_slot):
     for vdx in range(len(ev)):
         if ev['init'][vdx] >= ev['target'][vdx]:
             ev['init'][vdx] = ev['target'][vdx]/2
+            
     # EV plug-out time 오버되는거 조정
     for vdx in range(len(ev)):
         if ev['out'][vdx] > 47:
@@ -31,7 +32,7 @@ def pipeline(input_path,ev_num,ev_count,time_slot):
         ev_day = ev[(ev['Day'] == time_slot.day - 1) & (ev['ID'] <= ev_num-1)]
     
     # day에 맞춰서 index 추가하기
-    if (time_slot.day != 1) & (time_slot.hour == 0):
+    if (time_slot.day != 1) & (time_slot.hour == 0) & (time_slot.minute == 0):
         ev_day = ev_day.append(ev[ev['Day'] == time_slot.day - 1],ignore_index = True)
 
     
@@ -43,18 +44,18 @@ def pipeline(input_path,ev_num,ev_count,time_slot):
         
         # time update at next day
         if int(ev[ev == ev_day.loc[i]].dropna()['out']) > 24:
-            if ev_day['Day'][i] == time_slot.day:
+            if (ev_day['Day'][i] == time_slot.day) & (time_slot.hour):
                 ev_day[['in','out','dur']][i] = ev_day[['in','out','dur']][i] - 1
                 
     # EV data minus
         if ev_day['in'][i] <= 0:
             ev_day['in'][i] = 0
             
-    # complete EV data 
+    # complete EV data
         if ev_day['out'][i] <= 0:
             ev_day = ev_day.drop(i)
             
     # index reset
-    ev_day = ev_day.reset_index()
+    ev_day = ev_day.reset_index(drop=True)
    
     return [ev,ev_day,tou,ev_num,ev_count]
