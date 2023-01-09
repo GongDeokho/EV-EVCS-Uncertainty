@@ -1,14 +1,7 @@
-def pipeline(input_path,ev_day,evcs_plug,time_slot):
+def pipeline(evcs,evcs_tot,evcs_plug,evcs_num,ev_day,time_slot):
     import pandas as pd
     import numpy as np
     from datetime import datetime, timedelta
-    
-    evcs = pd.read_csv(input_path + "evcsConfig.csv")
-    evcs_num = 11 # 충전소 개수. 걍 설정함.
-    header = []
-    for i in range(evcs_plug):
-        header.append('#plug{}'.format(i))
-    evcs_tot = pd.DataFrame(np.zeros([int(evcs_num),int(evcs_plug)]),columns = header)
     
     #plug 개수랑 ev data랑 안맞으면 ev data 짤라야됨.
     if evcs_tot.size < len(ev_day):
@@ -17,10 +10,11 @@ def pipeline(input_path,ev_day,evcs_plug,time_slot):
 
     return [evcs,evcs_num,evcs_tot]
 
-def evcs_after(evcs_tot,evcs_err,time_slot,ev_day):
+def evcs_after(evcs_tot,evcs_err,time_slot,ev_day,path):
     import pandas as pd
     import numpy as np
     from datetime import datetime, timedelta
+    import os
     
     err_num = []
     # evcs error 데이터 찾기
@@ -35,7 +29,8 @@ def evcs_after(evcs_tot,evcs_err,time_slot,ev_day):
                         evcs_tot['#plug{}'.format(j)][i] = -1
                     else:
                         ev_day.iloc[i*5+j][['in','out']] = 0
-                evcs_tot['#plug{}'.format(j)][i] = -1
+            os.makedirs(path + '/result/EVCS/Day{}'.format(time_slot.day), exist_ok=True)
+            evcs_tot.to_csv(path + '/result/EVCS/Day{}/evcs_h{}_m{}_errnum{}.csv'.format(time_slot.day,time_slot.hour,time_slot.minute,i))
                 
     # recover time check & EVCS state update
     if sum(err_num) != 0:

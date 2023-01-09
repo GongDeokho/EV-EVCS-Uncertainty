@@ -1,9 +1,10 @@
-def pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,tou,time_slot,time):
+def pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,tou,time_slot,time,path):
     import pandas as pd
     import gurobipy as gp
     import numpy as np
     from gurobipy import GRB
     from datetime import datetime, timedelta
+    import os
          
     # target SoC >> power * Pmax 부분 조정하기 --> Dumb charge로
     for i in range(len(ev_day)):
@@ -45,6 +46,12 @@ def pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,tou,time_sl
     for idx in range(len(ev_day)):
         for t in range(ev_day['dur'][idx]):
             Power[idx][ev_day['in'][idx]-1 + t] = Power_pos[idx][t].X + Power_neg[idx][t].X
+    
+    # 스케줄 EV별로 분류하기
+        # 폴더 생성
+    os.makedirs(path + '/result/Schedule/Day{}/hour{}'.format(time_slot.day,time_slot.hour,idx), exist_ok=True)
+    for idx in range(len(ev_day)):
+        Power[idx].to_csv(path + '/result/Schedule/Day{}/hour{}/EV{}.csv'.format(time_slot.day,time_slot.hour,idx))
     
     #충전소에 EV들 할당하기
     park_num = len(ev_day)

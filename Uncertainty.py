@@ -1,27 +1,27 @@
-def pipeline(err_rate,ev_day,ev_num,evcs,evcs_num,evcs_plug):
+def pipeline(err_rate,ev,ev_num,evcs,evcs_num,evcs_plug):
     import numpy as np
     import pandas as pd
     
     #데이터 생성 개수
-    n = len(ev_day)
+    n = len(ev)
     
     ## Error rate 발생 ( Normal Distribution )
-    def norm_dist(err_rate,ev_day,n,evcs_num,evcs_plug):
+    def norm_dist(err_rate,ev,n,evcs_num,evcs_plug):
         mu1 = 0 #error mean : in, out, init soc
         x1 = err_rate # error rate
         
         # in, out, init soc
         sigma1 = x1/1.96
-        error_rate = np.zeros([1,3])
-        ev_error = np.zeros([1,3])
+        error_rate = np.zeros([1,n])
+        ev_error = np.zeros([1,n])
         loop = n
         while len(ev_error) < n:
             data1 = mu1 + sigma1 * np.random.randn(loop,3)
             for i in range(loop):
                 error_data = np.zeros([1,3])
-                error_data[0,0] = round(ev_day['in'][i] * (100 + data1[i,0])/100)
-                error_data[0,1] = round(ev_day['out'][i] * (100 + data1[i,1])/100)
-                error_data[0,2] = ev_day['init'][i] * (100 + data1[i,2])/100
+                error_data[0,0] = round(ev['in'][i] * (100 + data1[i,0])/100)
+                error_data[0,1] = round(ev['out'][i] * (100 + data1[i,1])/100)
+                error_data[0,2] = ev['init'][i] * (100 + data1[i,2])/100
                 
                 if ev_error[0,0] == 0 and ev_error[0,1] == 0 and ev_error [0,2] == 0:
                     ev_error = error_data
@@ -43,11 +43,11 @@ def pipeline(err_rate,ev_day,ev_num,evcs,evcs_num,evcs_plug):
                 for i in range(n+1,len(ev_error)):
                     np.delete(ev_error,i,0)
             
-        ev_err = pd.DataFrame(np.zeros([n,3]),columns = ['in','out','init'])
+        ev_err = pd.DataFrame(np.zeros([n,3]),columns = ['in_err','out_err','init_err'])
         for i in range(n):
-            ev_err['in'][i] = ev_error[i,0]
-            ev_err['out'][i] = ev_error[i,1]
-            ev_err['init'][i] = ev_error[i,2]
+            ev_err['in_err'][i] = ev_error[i,0]
+            ev_err['out_err'][i] = ev_error[i,1]
+            ev_err['init_err'][i] = ev_error[i,2]
 
         #recovery time & communication delay : time slot ==> minute
         mu2 = 120 #error mean : time value(2 hour)
@@ -74,8 +74,8 @@ def pipeline(err_rate,ev_day,ev_num,evcs,evcs_num,evcs_plug):
             data3 = mu3 + sigma3 * np.random.randn(loop,2)
             for i in range(loop):
                 error_data = np.zeros([1,2])
-                error_data[0,0] = round(ev_day['chg_eff'][i] * (100 + data3[i,0])/100)
-                error_data[0,1] = round(ev_day['dchg_eff'][i] * (100 + data3[i,1])/100)
+                error_data[0,0] = round(ev['chg_eff'][i] * (100 + data3[i,0])/100)
+                error_data[0,1] = round(ev['dchg_eff'][i] * (100 + data3[i,1])/100)
                 
                 if eff_error[0,0] == 0 and eff_error[0,1] == 0 and eff_error [0,2] == 0:
                     eff_error = error_data
@@ -89,16 +89,18 @@ def pipeline(err_rate,ev_day,ev_num,evcs,evcs_num,evcs_plug):
                 for i in range(n+1,len(eff_error)):
                     np.delete(eff_error,i,0)
             
-        eff_err = pd.DataFrame(np.zeros([n,2]),columns = ['chg_eff','dchg_eff'])
+        eff_err = pd.DataFrame(np.zeros([n,2]),columns = ['chg_eff_err','dchg_eff_err'])
         for i in range(n):
-            eff_err['chg_eff'][i] = eff_error[i,0]
-            eff_err['dchg_eff'][i] = eff_error[i,1]
+            eff_err['chg_eff_err'][i] = eff_error[i,0]
+            eff_err['dchg_eff_err'][i] = eff_error[i,1]
 
         ev_err = pd.concat([ev_err,time_err,eff_err,time_err],axis = 1)
         return(ev_err,time_err2)
-    [ev_err,time_err2] = norm_dist(err_rate,ev_day,n,evcs_num,evcs_plug)
+    [ev_err,time_err2] = norm_dist(err_rate,ev,n,evcs_num,evcs_plug)
+    ev = pd.concat([ev,ev_err],axis=1)
+    evcs = pd.concat([evcs,time_err2],axis=1)
     # Binary error 발생 (binomial Distribution)
-    def binom_dist(evcs_num,ev_num,ev_err,time_err2):
+    def binom_dist(evcs_num,ev,ev_num,ev_err,time_err2):
         evcs_err = pd.DataFrame(np.zeros([evcs_num,1]),columns = ['hardware_err'])
         batt_err = pd.DataFrame(np.zeros([n,1]),columns = ['battery_fault'])
         # communication err : evcs
@@ -113,6 +115,6 @@ def pipeline(err_rate,ev_day,ev_num,evcs,evcs_num,evcs_plug):
         # ev_err = pd.concat([ev_err,batt_err],axis = 1)
         evcs_err = pd.concat([evcs_err,time_err2],axis = 1)
         return(evcs_err, ev_err)
-    [evcs_err, ev_err] = binom_dist(evcs_num,ev_num,ev_err,time_err2)
+    [evcs_err, ev_err] = binom_dist(evcs_num,ev,ev_num,ev_err,time_err2)
 
     return [evcs_err,ev_err]

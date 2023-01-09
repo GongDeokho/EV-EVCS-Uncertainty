@@ -1,42 +1,35 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+import os
    
 import Uncertainty
 import EVCS
 import EV
 import Aggregator
+import input
 ev_num = 1
-input_path = './input/'
+path = os.path.abspath("C:\\Users\\PSSENL\\OneDrive - 경북대학교\\바탕 화면\\대학원\\EMS\\코딩\\8. EVCS & Uncertainty & EV")
 
-#ev parameter
-ev_num = 30 # 일일 충방전 희망 차량 개수
-ev_count = 1 # 현재 충방전 중인 차량 개수
-
-#evcs parameter
-evcs_plug = 5 # 충전소 1개 당 할당 EV 개수
-
-#uncertainty parameter
-err_rate = 20 #error rate
-
-#time parameter
-time_slot = datetime(datetime.today().year,datetime.today().month,1,0,0)
-time = 48 #스케줄링 시간
+[time_slot,time,tou,ev,ev_num,ev_count,ev_day,ev_comp,evcs_plug,evcs,evcs_num,evcs_tot,Power,Power_schedule,err_rate] = input.pipeline(path)
 
 while True:
     ev_count = 0
+    
+    #uncertainty
+    [evcs_err,ev_err] = Uncertainty.pipeline(err_rate,ev,ev_num,evcs,evcs_num,evcs_plug)   
+    
     #Scheduling
-    [ev,ev_day,tou,ev_num,ev_count] = EV.pipeline(input_path,ev_num,ev_count,time_slot) # EV data 받아오기
-    [evcs,evcs_num,evcs_tot] = EVCS.pipeline(input_path,ev_day,evcs_plug,time_slot) # EVCS data
+    [ev,ev_day,tou,ev_num,ev_count,ev_comp] = EV.pipeline(ev,ev_num,ev_count,time_slot,ev_day,ev_comp,tou) # EV data 받아오기
+    [evcs,evcs_num,evcs_tot] = EVCS.pipeline(evcs,evcs_tot,evcs_plug,evcs_num,ev_day,time_slot) # EVCS data
     
     # 매 시간마다 스케줄링 진행
     if time_slot.minute == 0:
-        [Power,evcs_tot,ev_count] = Aggregator.pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,tou,time_slot,time) #Scheduling
-    
-    [evcs_err,ev_err] = Uncertainty.pipeline(err_rate,ev_day,ev_num,evcs,evcs_num,evcs_plug)
+        [Power,evcs_tot,ev_count] = Aggregator.pipeline(ev_day,ev_num,ev_count,evcs,evcs_plug,evcs_num,evcs_tot,tou,time_slot,time,path) #Scheduling
     
     #Uncertainty 적용
-    [evcs_err,ev_err,evcs_tot] = EVCS.evcs_after(evcs_tot,evcs_err,time_slot,ev_day)
+    [evcs_err,ev_err,evcs_tot] = EVCS.evcs_after(evcs_tot,evcs_err,time_slot,ev_day,path)
+    # [evcs_err,ev_err,evcs_tot] = EV.ev_after(evcs_tot,evcs_err,time_slot,ev_day)
     
     #time slot update
     time_slot = time_slot + timedelta(minutes = 1)
